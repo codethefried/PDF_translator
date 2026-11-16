@@ -1,1 +1,56 @@
+# GitHub Pages 자동 배포
+# 위치: 저장소 최상위의 .github/workflows/deploy.yml
+# 준비: Settings → Pages → Source = "GitHub Actions"
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]   # 둘 중 기본 브랜치에 push하면 자동 실행
+  workflow_dispatch:           # Actions 탭에서 "Run workflow"로 수동 실행
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스 받기
+        uses: actions/checkout@v4
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 패키지 설치
+        run: npm install --no-audit --no-fund
+
+      - name: 빌드
+        run: npm run build
+
+      - name: Pages 설정
+        uses: actions/configure-pages@v5
+
+      - name: 빌드 결과 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pages에 배포
+        id: deployment
+        uses: actions/deploy-pages@v4
 
